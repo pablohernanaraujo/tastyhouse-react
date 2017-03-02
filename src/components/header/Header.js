@@ -1,6 +1,7 @@
 import React, { PropTypes } from 'react'
 import { Link } from 'react-router'
-import { Dialog, FlatButton } from 'material-ui'
+import { Dialog, FlatButton, IconButton, Drawer } from 'material-ui'
+import NavigationMenu from 'material-ui/svg-icons/navigation/menu'
 import classNames from 'classnames'
 import { WindowResizeListener } from 'react-window-resize-listener'
 import { connect } from 'react-redux'
@@ -16,6 +17,7 @@ class Header extends React.Component {
   constructor(){
     super();
     this.state = {
+      openMenu: false,
       open: false,
       menu: false,
       modalTitulo: '',
@@ -29,12 +31,24 @@ class Header extends React.Component {
       errors: {},
       cargando: false
     };
+    this.handleToggleMenu = this.handleToggleMenu.bind(this);
+    this.handleCloseMenu = this.handleCloseMenu.bind(this);
     this.handleOpen = this.handleOpen.bind(this);
     this.handleClose = this.handleClose.bind(this);
     this.onChangeField = this.onChangeField.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     this.ingresarFacebook = this.ingresarFacebook.bind(this);
     this.logout = this.logout.bind(this);
+  }
+
+  handleToggleMenu(){
+    this.setState({
+      openMenu: !this.state.openMenu
+    });
+  }
+
+  handleCloseMenu(){
+    this.setState({openMenu: false});
   }
 
   handleOpen(modal){
@@ -214,46 +228,126 @@ class Header extends React.Component {
   }
 
   render() {
-    let navBotones = <nav
-      className="nav"
-    >
+    let logo = <div className="contenedor-menu">
+      <div className="logo" />
+    </div>;
+
+    if(this.state.menu){
+      logo = <div
+        className="contenedor-menu"
+      >
+        <div className="menu-boton">
+          <IconButton
+            onTouchTap={this.handleToggleMenu}
+          >
+            <NavigationMenu />
+          </IconButton>
+        </div>
+        <div className="logo" />
+      </div>;
+    }
+
+    let navBotones = null;
+
+    if(!this.state.menu){
+      navBotones = <nav
+        className="nav"
+      >
+        <a
+          className="nav-btn"
+          onTouchTap={() => this.handleOpen('ingresar')}
+        >
+          <span>Ingresar</span>
+        </a>
+        <a
+          className="nav-btn"
+          onTouchTap={() => this.handleOpen('registrarse')}
+        >
+          <span>Registrarse</span>
+        </a>
+      </nav>;
+
+      if(this.props.auth.isAuth){
+        navBotones = <nav
+          className="nav"
+        >
+          <Link
+            to="/"
+            className={classNames(this.props.pathname === '/' ? "nav-btn nav-btn-active" : "nav-btn")}
+          >
+            <span>Inicio</span>
+          </Link>
+          <Link
+            to="/private"
+            className={classNames(this.props.pathname === '/private' ? "nav-btn nav-btn-active" : "nav-btn")}
+          >
+            <span>{this.props.auth.user.nombre}</span>
+          </Link>
+          <a
+            className="nav-btn"
+            onClick={this.logout}
+          >
+            <span>Salir</span>
+          </a>
+        </nav>;
+      }
+    }
+
+    let menuBotones = <div>
       <a
-        className="nav-btn"
-        onTouchTap={() => this.handleOpen('ingresar')}
+        className="menu-boton-item"
+        onTouchTap={() => {
+          this.handleCloseMenu();
+          this.handleOpen('ingresar');
+        }}
       >
         <span>Ingresar</span>
       </a>
       <a
-        className="nav-btn"
-        onTouchTap={() => this.handleOpen('registrarse')}
+        className="menu-boton-item"
+        onTouchTap={() => {
+          this.handleCloseMenu();
+          this.handleOpen('registrarse');
+        }}
       >
         <span>Registrarse</span>
       </a>
-    </nav>;
+    </div>;
 
     if(this.props.auth.isAuth){
-      navBotones = <nav
-        className="nav"
-      >
+      menuBotones = <div>
         <Link
           to="/"
-          className={classNames(this.props.pathname === '/' ? "nav-btn nav-btn-active" : "nav-btn")}
+          style={{textDecoration: 'none'}}
         >
-          <span>Inicio</span>
+          <div
+            onTouchTap={this.handleCloseMenu}
+            className={classNames(this.props.pathname === '/' ? "menu-boton-item menu-boton-item-active" : "menu-boton-item")}
+          >
+            Inicio
+          </div>
         </Link>
         <Link
           to="/private"
-          className={classNames(this.props.pathname === '/private' ? "nav-btn nav-btn-active" : "nav-btn")}
+          style={{textDecoration: 'none'}}
         >
-          <span>{this.props.auth.user.nombre}</span>
+          <div
+            onTouchTap={this.handleCloseMenu}
+            className={classNames(this.props.pathname === '/private' ? "menu-boton-item menu-boton-item-active" : "menu-boton-item")}
+          >
+            {this.props.auth.user.nombre}
+          </div>
         </Link>
         <a
-          className="nav-btn"
-          onClick={this.logout}
+          className="menu-boton-item"
+          onTouchTap={() => {
+            this.handleCloseMenu();
+            this.logout();
+          }}
         >
           <span>Salir</span>
         </a>
-      </nav>;
+      </div>;
     }
 
     const actions = [
@@ -268,23 +362,19 @@ class Header extends React.Component {
       <div>
         <WindowResizeListener
           onResize={windowSize => {
-            if(windowSize.windowWidth > 800){
+            if(windowSize.windowWidth > 600){
               this.setState({
-                menu: false
+                menu: false,
               });
-            }else if(windowSize.windowWidth <= 800){
+            }else if(windowSize.windowWidth <= 600){
               this.setState({
-                menu: true
+                menu: true,
               });
             }
           }}
         />
         <header className="header">
-          <img
-            src="images/tastylogoblanco.png"
-            alt="tasty house logo"
-            className="logo"
-          />
+          {logo}
           {navBotones}
         </header>
         <Dialog
@@ -317,6 +407,14 @@ class Header extends React.Component {
             />}
 
         </Dialog>
+        <Drawer
+          docked={false}
+          width={200}
+          open={this.state.openMenu}
+          onRequestChange={(openMenu) => this.setState({openMenu})}
+        >
+          {menuBotones}
+        </Drawer>
       </div>
     );
   }
